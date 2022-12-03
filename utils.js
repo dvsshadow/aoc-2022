@@ -12,6 +12,5 @@ export async function processLineByLine(fileName) {
   for await (const line of rl) {
     toReturn.push(line);
   }
-  toReturn.push("");
   return toReturn;
 }
