@@ -1,8 +1,6 @@
 import { processLineByLine } from "../utils.js";
 
-async function solve() {
-    const lines = await processLineByLine("input.txt");
-
+function mapData(lines) {
     const s = lines.indexOf("");
     const rawBoxes = lines.slice(0, s);
     const rawInstructions = lines.slice(s + 1, lines.length);
@@ -47,13 +45,19 @@ async function solve() {
         ])
     }
 
+    return {
+        boxes: boxes,
+        instructions: instructions
+    }
+}
+
+function reduceData(boxes, instructions) {
     for (const instruction of instructions) {
         const [quantity, fromIdx, toIdx] = instruction.map(n => parseInt(n));
         for (let i = 0; i < quantity; i++) {
             const popped = boxes[fromIdx - 1].shift();
             boxes[toIdx - 1].unshift(popped);
         }
-
     }
 
     const toReturn = [];
@@ -61,7 +65,15 @@ async function solve() {
         toReturn.push(box[0]);
     }
 
-    console.log(toReturn.join(""));
+    return toReturn.join("");
+}
+
+
+async function solve() {
+    const lines = await processLineByLine("input.txt");
+    const {boxes, instructions} = mapData(lines);
+    const result = reduceData(boxes, instructions);
+    console.log(result);
 }
 
 solve();
