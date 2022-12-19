@@ -60,10 +60,6 @@ function getMaxGeodes(blueprint) {
         clay = Math.min(clay, maxClayToProduce);
         obsidian = Math.min(obsidian, maxObsidianToProduce)
 
-        if (visited.size % 10000 === 0) {
-            console.log(JSON.stringify([robots, minerals, minutes]));
-        }
-
         if (visited.has(JSON.stringify([robots, minerals, minutes]))) {
             continue;
         }
