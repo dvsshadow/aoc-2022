@@ -30,23 +30,23 @@ function mapData(lines) {
     return blueprints;
 }
 
-function getMaxGeodes(blueprint) {
+function getMaxGeodes(blueprint, minutes) {
     let maxGeodes = 0;
     const bfsQueue = [];
-    bfsQueue.push([[1, 0, 0, 0], [0, 0, 0, 0], 24]);
+    bfsQueue.push([[1, 0, 0, 0], [0, 0, 0, 0], minutes]);
     const visited = new Set();
 
-    while (bfsQueue.length > 0) {
-        const [robots, minerals, minutes] = bfsQueue.shift();
+    let currentMinute = minutes;
+    const maxOreNeeded = Math.max(blueprint.oreRobot.ore, blueprint.clayRobot.ore, blueprint.obsidianRobot.ore, blueprint.geodeRobot.ore);
+
+    function tryAdd(robots, minerals, minutes) {
         let [ore, clay, obsidian, geode] = minerals;
         let [oreRbt, clayRbt, obsidianRbt, geodeRbt] = robots;
 
-        maxGeodes = Math.max(maxGeodes, geode);
         if (minutes === 0) {
-            continue;
+            maxGeodes = Math.max(maxGeodes, geode);
+            return;
         }
-
-        const maxOreNeeded = Math.max(blueprint.oreRobot.ore, blueprint.clayRobot.ore, blueprint.obsidianRobot.ore, blueprint.geodeRobot.ore);
 
         oreRbt = Math.min(oreRbt, maxOreNeeded);
         clayRbt = Math.min(clayRbt, blueprint.obsidianRobot.clay);
@@ -60,41 +60,54 @@ function getMaxGeodes(blueprint) {
         clay = Math.min(clay, maxClayToProduce);
         obsidian = Math.min(obsidian, maxObsidianToProduce)
 
-        if (visited.has(JSON.stringify([robots, minerals, minutes]))) {
-            continue;
-        }
+        minerals = [ore, clay, obsidian, geode];
+        robots = [oreRbt, clayRbt, obsidianRbt, geodeRbt];
 
-        visited.add(JSON.stringify([robots, minerals, minutes]));
+        if (visited.has(JSON.stringify([robots, minerals]))) {
+            return;
+        }
+        visited.add(JSON.stringify([robots, minerals]));
+        bfsQueue.push([robots, minerals, minutes]);
+    }
+
+    while (bfsQueue.length > 0) {
+        const [robots, minerals, minutes] = bfsQueue.shift();
+        let [ore, clay, obsidian, geode] = minerals;
+        let [oreRbt, clayRbt, obsidianRbt, geodeRbt] = robots;
+
+        if (minutes < currentMinute) {
+            currentMinute = minutes;
+        }
 
         if (blueprint.oreRobot.ore <= ore) {
-            bfsQueue.push([
+            tryAdd(
                 [oreRbt + 1, clayRbt, obsidianRbt, geodeRbt],
                 [ore + oreRbt - blueprint.oreRobot.ore, clay + clayRbt, obsidian + obsidianRbt, geode + geodeRbt],
-                minutes - 1]);
+                minutes - 1);
         }
         if (blueprint.clayRobot.ore <= ore) {
-            bfsQueue.push([
+            tryAdd(
                 [oreRbt, clayRbt + 1, obsidianRbt, geodeRbt],
                 [ore + oreRbt - blueprint.clayRobot.ore, clay + clayRbt, obsidian + obsidianRbt, geode + geodeRbt],
-                minutes - 1]);
+                minutes - 1);
         }
         if (blueprint.obsidianRobot.ore <= ore && blueprint.obsidianRobot.clay <= clay) {
-            bfsQueue.push([
+            tryAdd(
                 [oreRbt, clayRbt, obsidianRbt + 1, geodeRbt],
                 [ore + oreRbt - blueprint.obsidianRobot.ore, clay + clayRbt - blueprint.obsidianRobot.clay, obsidian + obsidianRbt, geode + geodeRbt],
-                minutes - 1]);
+                minutes - 1);
         }
         if (blueprint.geodeRobot.ore <= ore && blueprint.geodeRobot.obsidian <= obsidian) {
-            bfsQueue.push([
+            tryAdd(
                 [oreRbt, clayRbt, obsidianRbt, geodeRbt + 1],
                 [ore + oreRbt - blueprint.geodeRobot.ore, clay + clayRbt, obsidian + obsidianRbt - blueprint.geodeRobot.obsidian, geode + geodeRbt],
-                minutes - 1]);
+                minutes - 1);
         }
 
-        bfsQueue.push([
+        tryAdd(
             [oreRbt, clayRbt, obsidianRbt, geodeRbt],
             [ore + oreRbt, clay + clayRbt, obsidian + obsidianRbt, geode + geodeRbt],
-            minutes - 1]);
+            minutes - 1);
     }
     return maxGeodes;
 }
@@ -103,7 +116,7 @@ function reduceData(blueprints) {
     let qualitySum = 0;
     for (let i = 0; i < blueprints.length; i++) {
         const blueprint = blueprints[i];
-        qualitySum += (i + 1) * getMaxGeodes(blueprint);
+        qualitySum += (i + 1) * getMaxGeodes(blueprint, 24);
     }
     return qualitySum;
 }
